@@ -2,8 +2,21 @@ version: '3'
 services:
   bind:
     build: .
+#    ports:
+#      - 53:5353
 # Volumes can be used for overwriting the config in the container
 # This can be useful for an OS3 student of a preceding year of mine ;)
 #    volumes:
-#      - /tmp/named.conf:/usr/local/etc/bind/named.conf:ro
+#      - $PWD/named.local:/usr/local/etc/bind/named.local:ro
 
+# Tried container linking with both having a different PID 1 process (named and rndc)
+# But this took too much time..
+    entrypoint: ['named', "-p", "5353"]
+    command: ["-f"]
+  rndc:
+    build: .
+    links:
+      - bind
+      - bind:bind
+    entrypoint: ["rndc", "-c", "/usr/local/etc/bind/rndc.conf", "-p", "5353", "-b", "bind"]
+    command: ["status"]

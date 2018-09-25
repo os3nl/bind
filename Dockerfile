@@ -57,18 +57,55 @@ RUN make install 1> /dev/null
 # linking config to logical places
 RUN ln -s $OS3_SPECIFIC_PATH_02 /etc/bind
 
+# 3.1 Main Configuration
 #man named.conf|grep named.conf|tail -1
 #       /etc/named.conf
 COPY named.conf /etc/
-COPY named.local /etc
 RUN ln -s /etc/named.conf $OS3_SPECIFIC_PATH_02/named.conf
-RUN ln -s /etc/named.local $OS3_SPECIFIC_PATH_02/named.local
 
-# 3.3 Resolving
+# 3.2 Root Servers
 RUN curl --silent -o $OS3_SPECIFIC_PATH_02/named.cache \
   ftp://ftp.rs.internic.net/domain/named.cache
 
+# 3.3 Resolving
+COPY named.local /etc
+RUN ln -s /etc/named.local $OS3_SPECIFIC_PATH_02/named.local
+
+# 3.4 Testing
 RUN named-checkconf /usr/local/etc/bind/named.conf \
   || (echo named.conf has an error! && exit 1)
 
+
 EXPOSE 53
+# 4 Running and Improving the Name Server
+ENTRYPOINT ["/usr/local/sbin/named", "-d2"]
+# -g = Run the server in the foreground and force all logging to stderr. src:https://linux.die.net/man/8/named
+# we could also use -f
+CMD ["-g"]
+
+# assignment: write debug information to a log file
+# but in docker, you don't do this, docker handles it,
+# so I throw it to stdout
+#RUN ln -s /dev/stdout /var/log/named.log
+
+
+# Q6
+# inspired by tecadmin.net/configure-rndc-for-bind9
+# The following is for illustrative purpose, it is part of the assignment,
+# you should NEVER put private key files in your container!
+# rndc-confgen --help 2>&1|grep generate
+#  -a:            generate just the key clause and write it to keyfile (/usr/local/etc/bind/rndc.key)
+RUN rndc-confgen -r /dev/urandom -a
+
+# Now we construct the rndc.conf
+WORKDIR $OS3_SPECIFIC_PATH_02
+RUN cat rndc.key > rndc.conf; \
+  echo 'options { default-port 5353; default-key "rndc-key"; default-server bind;};' >> rndc.conf
+EXPOSE 5353
+# and update the config
+RUN cat rndc.key >> named.conf; \
+  echo 'controls { inet 127.0.0.1 allow {172/8;} keys {"rndc-key";}; };' >> named.conf
+
+# Q7
+COPY entrypoint.sh /
+ENTRYPOINT ["/entrypoint.sh"]
