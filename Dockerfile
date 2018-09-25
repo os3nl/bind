@@ -100,11 +100,12 @@ RUN rndc-confgen -r /dev/urandom -a
 # Now we construct the rndc.conf
 WORKDIR $OS3_SPECIFIC_PATH_02
 RUN cat rndc.key > rndc.conf; \
-  echo 'options { default-port 5353; default-key "rndc-key"; default-server bind;};' >> rndc.conf
-EXPOSE 5353
+  echo 'options { default-port 953; default-key "rndc-key"; default-server 127.0.0.1;};' >> rndc.conf
 # and update the config
+# https://support.plesk.com/hc/en-us/articles/115003691334-DNS-does-not-propage-rndc-connection-to-remote-host-closed
 RUN cat rndc.key >> named.conf; \
-  echo 'controls { inet 127.0.0.1 allow {172/8;} keys {"rndc-key";}; };' >> named.conf
+  echo 'controls { inet 127.0.0.1 port 953 allow {127.0.0.1; 172/8;} keys {"rndc-key";}; };' >> named.conf
+EXPOSE 953
 
 # Q7
 COPY entrypoint.sh /

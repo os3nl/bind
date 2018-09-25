@@ -11,12 +11,12 @@ services:
 
 # Tried container linking with both having a different PID 1 process (named and rndc)
 # But this took too much time..
-    entrypoint: ['named', "-p", "5353"]
-    command: ["-f"]
-  rndc:
-    build: .
-    links:
-      - bind
-      - bind:bind
-    entrypoint: ["rndc", "-c", "/usr/local/etc/bind/rndc.conf", "-p", "5353", "-b", "bind"]
-    command: ["status"]
+#    entrypoint: ['named', "-p", "5353"]
+#    command: ["-f"]
+#  rndc:
+#    build: .
+#    links:
+#      - bind
+#      - bind:bind
+#    entrypoint: ["rndc", "-c", "/usr/local/etc/bind/rndc.conf", "-p", "5353", "-b", "bind"]
+#    command: ["status"]
