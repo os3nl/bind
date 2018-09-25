@@ -1,0 +1,11 @@
+; based on https://help.ubuntu.com/community/BIND9ServerHowto
+$TTL    60
+@ IN SOA nevers.studlab.os3.nl. sander.lent.ink. (
+    2018092001 ; Serial
+    60         ; Refresh
+    60         ; Retry
+    60         ; Expire
+    60 )       ; Negative Cache TTL
+;
+@   IN  NS  nevers.studlab.os3.nl.
+10  IN  PTR localhost.

@@ -1,0 +1,9 @@
+version: '3'
+services:
+  bind:
+    build: .
+# Volumes can be used for overwriting the config in the container
+# This can be useful for an OS3 student of a preceding year of mine ;)
+#    volumes:
+#      - /tmp/named.conf:/usr/local/etc/bind/named.conf:ro
+
