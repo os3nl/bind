@@ -110,3 +110,26 @@ EXPOSE 953
 # Q7
 COPY entrypoint.sh /
 ENTRYPOINT ["/entrypoint.sh"]
+
+### lab 4 DNS 2 ###
+RUN apk add --no-cache sipcalc
+ENV FIRST3OCT 145.100.111
+ENV LASTOCTET 0
+ENV SERVER_RANGE $FIRST3OCT.$LASTOCTET/28
+RUN sipcalc $SERVER_RANGE|grep range
+#Network range     - 145.100.111.0 - 145.100.111.15
+#Usable range      - 145.100.111.1 - 145.100.111.14
+
+# The following code generates a forward lookup zone assuming a /28 range
+ENV MYZONEDB $OS3_SPECIFIC_PATH_02/myzone.db
+RUN echo "subnet-id IN A $FIRST3OCT.$LASTOCTET" > $MYZONEDB
+SHELL ["/bin/bash", "-c"]
+RUN for i in {0..14}; do echo "host$i IN A $FIRST3OCT."$((LASTOCTET + i)) >> $MYZONEDB; done
+RUN echo "subnet-bc IN A $FIRST3OCT."$((LASTOCTET + 15)) >> $MYZONEDB
+# We see the first three octets in reverse order:
+RUN echo 'zone "111.100.145.in-addr.arpa" IN { type master; file "myzone.db";};' \
+  >> $OS3_SPECIFIC_PATH_02/named.conf
+
+COPY myzone.conf $OS3_SPECIFIC_PATH_02/
+ENTRYPOINT ["/usr/local/sbin/named","-f","-p","53"]
+CMD ['-4']
