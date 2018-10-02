@@ -133,10 +133,7 @@ RUN echo "subnet-broadc IN A $FIRST3OCT."$((LASTOCTET + 15)) >> $MYZONEDB
 
 
 # We see the first three octets in reverse order:
-RUN echo 'zone "111.100.145.in-addr.arpa" IN { type master; file "myzone.conf";};' \
-  >> $OS3_SPECIFIC_PATH_02/named.conf
-
-RUN echo 'zone "mypraczone" IN { type master; file "myprac.conf";};' \
+RUN echo 'zone "myzone" IN { type master; file "myzone.conf";};' \
   >> $OS3_SPECIFIC_PATH_02/named.conf
 
 COPY myzone.conf $OS3_SPECIFIC_PATH_02/
