@@ -5,7 +5,7 @@ services:
     ports:
       - 145.100.104.117:53:53/tcp
       - 145.100.104.117:53:53/udp
-    volume:
+    volumes:
       - $PWD/primary.zone.conf:/usr/local/etc/bind/myzone.conf:ro
   secondary:
     image: bind
@@ -13,6 +13,6 @@ services:
       - 145.100.111.10:53:53/tcp
       - 145.100.111.10:53:53/udp
       - 145.100.104.117:53:53/udp
-    volume:
+    volumes:
       - $PWD/secondary.zone.conf:/usr/local/etc/bind/myzone.conf:ro
 
