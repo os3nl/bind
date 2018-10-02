@@ -11,3 +11,5 @@ docker run --rm -d \
   -p 145.100.104.117:53:53/udp \
   os3nl/bind
 ```
+
+named-checkconf /etc/named.conf
