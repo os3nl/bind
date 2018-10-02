@@ -136,6 +136,9 @@ RUN echo "subnet-broadc IN A $FIRST3OCT."$((LASTOCTET + 15)) >> $MYZONEDB
 RUN echo 'zone "111.100.145.in-addr.arpa" IN { type master; file "myzone.conf";};' \
   >> $OS3_SPECIFIC_PATH_02/named.conf
 
+RUN echo 'zone "nevers.prac.os3.nl" IN { type master; file "myprac.conf";};' \
+  >> $OS3_SPECIFIC_PATH_02/named.conf
+
 COPY myzone.conf $OS3_SPECIFIC_PATH_02/
 ENTRYPOINT ["/usr/local/sbin/named","-f","-p","53"]
 CMD ["-4"]
