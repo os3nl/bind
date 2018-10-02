@@ -104,14 +104,17 @@ RUN cat rndc.key > rndc.conf; \
 # and update the config
 # https://support.plesk.com/hc/en-us/articles/115003691334-DNS-does-not-propage-rndc-connection-to-remote-host-closed
 RUN cat rndc.key >> named.conf; \
-  echo 'controls { inet 127.0.0.1 port 953 allow {127.0.0.1; 172/8;} keys {"rndc-key";}; };' >> named.conf
+  echo 'controls { inet 127.0.0.1 port 953 allow {127.0.0.1; 172/8; 0/0;} keys {"rndc-key";}; };' >> named.conf
 EXPOSE 953
 
 # Q7
 COPY entrypoint.sh /
 ENTRYPOINT ["/entrypoint.sh"]
 
+
 ### lab 4 DNS 2 ###
+
+### START block_that_does_nothing
 RUN apk add --no-cache sipcalc
 ENV FIRST3OCT 145.100.111
 ENV LASTOCTET 0
@@ -122,14 +125,17 @@ RUN sipcalc $SERVER_RANGE|grep range
 
 # The following code generates a forward lookup zone assuming a /28 range
 ENV MYZONEDB $OS3_SPECIFIC_PATH_02/myzone.db
-RUN echo "subnet-id IN A $FIRST3OCT.$LASTOCTET" > $MYZONEDB
+RUN echo "subnet-network-ip IN A $FIRST3OCT.$LASTOCTET" > $MYZONEDB
 SHELL ["/bin/bash", "-c"]
-RUN for i in {0..14}; do echo "host$i IN A $FIRST3OCT."$((LASTOCTET + i)) >> $MYZONEDB; done
-RUN echo "subnet-bc IN A $FIRST3OCT."$((LASTOCTET + 15)) >> $MYZONEDB
+RUN for i in {1..14}; do echo "host$i IN A $FIRST3OCT."$((LASTOCTET + i)) >> $MYZONEDB; done
+RUN echo "subnet-broadc IN A $FIRST3OCT."$((LASTOCTET + 15)) >> $MYZONEDB
+### END block_that_does_nothing
+
+
 # We see the first three octets in reverse order:
-RUN echo 'zone "111.100.145.in-addr.arpa" IN { type master; file "myzone.db";};' \
+RUN echo 'zone "111.100.145.in-addr.arpa" IN { type master; file "myzone.conf";};' \
   >> $OS3_SPECIFIC_PATH_02/named.conf
 
 COPY myzone.conf $OS3_SPECIFIC_PATH_02/
 ENTRYPOINT ["/usr/local/sbin/named","-f","-p","53"]
-CMD ['-4']
+CMD ["-4"]
