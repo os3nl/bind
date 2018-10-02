@@ -6,12 +6,12 @@ services:
       - 145.100.104.117:53:53/tcp
       - 145.100.104.117:53:53/udp
     volumes:
-      - $PWD/primary.zone.conf:/usr/local/etc/bind/myzone.conf:ro
+      - $PWD/primary.zone.conf:/usr/local/etc/bind/mypraczone.conf:ro
   secondary:
     image: bind
     ports:
       - 145.100.111.10:53:53/tcp
       - 145.100.111.10:53:53/udp
     volumes:
-      - $PWD/secondary.zone.conf:/usr/local/etc/bind/myzone.conf:ro
+      - $PWD/secondary.zone.conf:/usr/local/etc/bind/mypraczone.conf:ro
 
