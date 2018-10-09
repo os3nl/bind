@@ -296,14 +296,3 @@ RFC8080 is the newest, we'll go for ED22519 since 128-bit is sufficient for our 
 === Q17. Can you use the same procedure for a KSK rollover? What does this depend on?  ===
 
 
-==== BONUS ====
-
-=== Q18. Integrity is important because you want your buddy to include the right DS records Is confidentiality also an issue? Explain  ===
-
-=== Q19. Verify the integrity of your buddy's resource records using dig or drill Is the ad flag set?  ===
-
-=== Q20. What are the main differences between NSEC and NSEC3?  ===
-
-=== Q21. Does the root use NSEC or NSEC3? What about the org domain?  ===
-
-=== Q22. How common is NSEC3?  ===
