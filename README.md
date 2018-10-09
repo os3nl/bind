@@ -13,3 +13,7 @@ docker run --rm -d \
 ```
 
 named-checkconf /etc/named.conf
+
+## Guides
++ https://www.digitalocean.com/community/tutorials/how-to-configure-bind-as-an-authoritative-only-dns-server-on-ubuntu-14-04
++ https://devops.profitbricks.com/tutorials/configure-authoritative-name-server-using-bind-on-ubuntu/

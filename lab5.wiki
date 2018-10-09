@@ -1,0 +1,84 @@
+====== DNSSEC ======
+
+=== Q1. What does a validating resolver do?  ===
+
+It works the same way as a normal resolver,
+but has the DNSSEC added.
+This means that it will verify the queries it sends by
+checking the RRSIG on the DNSKEY and verify the RRSIG for the DS record.
+The hash of the DS (located at parent) should match the public KSK
+of the zone (child) one is querying.
+All to verify that the chain of trust is not altered.
+
+=== Q2. Add support for DNSSEC to your BIND or Unbound configuration  ===
+== a. What changes do you have to make to your configuration?  == 
+
+DNSSEC enabled in named.conf:
+<code>
+options {
+directory "/usr/local/etc/bind";
+//For dns labs we want recursion, for mail labs we do not
+//recursion no;
+allow-recursion { 0/0; };
+fetch-glue yes;
+//DNSSEC lab
+dnssec-enable yes;
+dnssec-validation auto;
+};
+//the auto will get the root DNSKEY (KSK=257) for us
+//managed-keys {};
+</code>
+Bind can do 'managed-keys' itself when validation is set to auto.
+
+== b. Verify the root key used against a trusted source  == 
+
+=== Q3. Use dig or drill to verify the validity of DNS records for isc org and os3 nl Show the results  ===
+
+=== Q4. How does dig / drill show whether DNSSEC validation was succesful or not?  ===
+
+=== Q5. Where does BIND/Unbound store the DNSSEC root key?  ===
+
+=== Q6. How do managed keys differ from trusted keys ? Which RFC describes the mechanisms for managed keys?  ===
+
+=== Q7. How did you modify the DNSSEC root key?  ===
+
+=== Q8. What problems did your server encounter and how did it react?  ===
+
+=== Q9. Look up which cryptographic algorithms are available for use in DNSSEC Which one do you prefer and why?  ===
+
+=== Q10. In practice different algorithms key sizes and key lifetimes are chosen for KSKs and ZSKs Discuss what are these differences in  ===
+== a. algorithms  == 
+== b. key sizes  == 
+== c. key lifetimes  == 
+
+
+=== Q11. Choose appropriate algorithms key sizes and key lifetimes for your KSK and ZSK  ===
+
+=== Q12. Show the signed version of your zone file How does it differ from the unsigned version? Any unexpected differences?  ===
+
+=== Q13. Which DS record do you need to send to Niels and why that one? Once Niels has implemented your DS record use a DNSSEC debugger to examine the chain of trust see http //dnssec-debugger verisignlabs com/ (use more detail ) or http //dnsviz net/  ===
+
+=== Q14. Show the results of the examination of your secured domain  ===
+
+=== Q15. Describe the DS and DNSKEY records from os3 nl down that are important for your domain Which keys are used to sign them?  ===
+
+=== Q16. Start planning for a Zone Signing Key rollover  ===
+== a. Describe the options for doing a ZSK rollover make a motivated choice for one procedure  == 
+== b. How do you implement this procedure with the tools for signing your zone?  == 
+== c. Which timers are important for this procedure?  == 
+== d. Implement the procedure and use a DNSSEC debugger to verify each step Don't forget to show the results of each verification  == 
+
+=== Q17. Can you use the same procedure for a KSK rollover? What does this depend on?  ===
+
+
+==== BONUS ====
+
+=== Q18. Integrity is important because you want your buddy to include the right DS records Is confidentiality also an issue? Explain  ===
+
+=== Q19. Verify the integrity of your buddy's resource records using dig or drill Is the ad flag set?  ===
+
+=== Q20. What are the main differences between NSEC and NSEC3?  ===
+
+=== Q21. Does the root use NSEC or NSEC3? What about the org domain?  ===
+
+=== Q22. How common is NSEC3?  ===
