@@ -1,13 +1,15 @@
 version: '3'
 services:
   bind:
-    build: .
-#    ports:
-#      - 53:5353
+    image: bind # you should do: docker build -t bind .
+    ports:
+      - 145.100.104.117:53:53/tcp
+      - 145.100.104.117:53:53/udp
 # Volumes can be used for overwriting the config in the container
 # This can be useful for an OS3 student of a preceding year of mine ;)
-#    volumes:
-#      - $PWD/named.local:/usr/local/etc/bind/named.local:ro
+# Or just for faster debugging..
+    volumes:
+      - $PWD/named.local:/usr/local/etc/bind/named.local:ro
 
 # Tried container linking with both having a different PID 1 process (named and rndc)
 # But this took too much time..
