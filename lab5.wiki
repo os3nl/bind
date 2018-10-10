@@ -272,9 +272,34 @@ RFC8080 is the newest, we'll go for ED22519 since 128-bit is sufficient for our 
 (we are not an online bank).
 
 === Q10. In practice different algorithms key sizes and key lifetimes are chosen for KSKs and ZSKs Discuss what are these differences in  ===
-== a. algorithms  == 
-== b. key sizes  == 
+== a. algorithms  ==
+There are algorithms based on the descrete log problem (RSA)
+and the Eliptic Curve based algorithms (where are more efficient).
+If ever there is a security hole discovered in one of them,
+it is nice to have a backup ready of the other,
+so a smooth transition (rollover) can be done.
+
+Note that there does not need to be an issue with the algorithm itself,
+there can also be an issue with a certain implementations on some systems,
+which makes it desirable to phase that one out.
+
+== b. key sizes  ==
+The KSK is changed less often (see c.)
+and therefore has a longer lifespan
+and thus a larger time window to bruteforce
+and more valuable to bruteforce (since you can abuse it longer).
+This makes the KSK more valuable and thus needs to be protected
+by a larger key size than the ZSK.
+
+
 == c. key lifetimes  == 
+The key that is communicated to the parent,
+requires communication with the parent
+(which is usually a manual action in webportal of your DNS provider).
+This requires more effort and therefore you have a separate key for your own zone,
+by which you sign all your records and you can do an easy rollover,
+while the KSK which signs this ZSK is the one you change less frequently.
+
 
 
 === Q11. Choose appropriate algorithms key sizes and key lifetimes for your KSK and ZSK  ===
