@@ -1,0 +1,12 @@
+version: '3'
+services:
+  image: svlentink/dnssec
+  ENVIRONMENT:
+    IPV4MASTER 145.100.111.11
+    SERVERTYPE master
+  volumes:
+    - $PWD/myzones:/zonefiles
+    - $PWD/dnskeys:/keys
+  ports:
+    - 145.100.111.11:53:53/tcp
+    - 145.100.111.11:53:53/udp

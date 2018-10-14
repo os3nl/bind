@@ -1,0 +1,15 @@
+$TTL 60
+@ IN SOA ns1.os3.club. sander.lent.ink. (
+    2018101401 ; Serial
+    60         ; Refresh
+    60         ; Retry
+    60         ; Expire
+    60 )       ; Negative Cache TTL
+
+@ IN NS os3.club.
+@ IN NS ns1.os3.club.
+@ IN NS ns2.os3.club.
+os3.nl. IN A 145.100.111.11
+ns1.os3.nl. IN A 145.100.111.11
+ns2.os3.nl. IN A 145.100.111.11
+www.os3.nl. IN CNAME www.lent.ink.

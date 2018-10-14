@@ -268,7 +268,7 @@ curl --silent https://tools.ietf.org/id/draft-sury-dnskey-ed25519-02.xml|grep -A
       symmetric ciphers.  Such an assessment could, of course, change
 
 </code>
-RFC8080 is the newest, we'll go for ED22519 since 128-bit is sufficient for our use case
+RFC8080 is the newest, we'll go for ED25519 since 128-bit is sufficient for our use case
 (we are not an online bank).
 
 === Q10. In practice different algorithms key sizes and key lifetimes are chosen for KSKs and ZSKs Discuss what are these differences in  ===
@@ -304,9 +304,228 @@ while the KSK which signs this ZSK is the one you change less frequently.
 
 === Q11. Choose appropriate algorithms key sizes and key lifetimes for your KSK and ZSK  ===
 
+For the KSK we choose 1y (since I expect to have finished this masters by then),
+for the ZSK we choose 1q (=3m).
+
+For ED*, the key size is ignored:
+<code>
+dnssec-keygen --help 2>&1|grep ED
+        ED25519 | ED448 | DH |
+        ED25519:        ignored
+        ED448:  ignored
+</code>
+I'll use ED25519 for both.
+
 === Q12. Show the signed version of your zone file How does it differ from the unsigned version? Any unexpected differences?  ===
 
+<code>
+dnssec-keygen -a ED25519 \
+  -3 \
+  -f KSK \
+  -L 60 \
+  -I $((60*60*24*365)) \
+  nevers.prac.os3.nl.
+  
+</code>
+
+But this is not possible, which we read here:
+https://github.com/isc-projects/bind9/blob/master/CHANGES
+<code>
+4665.	[protocol]	Added support for ED25519 and ED448 DNSSEC signing
+			algorithms (RFC 8080). (Note: these algorithms
+			depend on code currently in the development branch
+			of OpenSSL which has not yet been released.)
+			[RT #44696]
+</code>
+
+So I'll use (note that you would normally not choose a TTL of 60 for the KSK):
+<code>
+dnssec-keygen -a RSASHA256 -b 1024 \
+  -3 \
+  -f KSK \
+  -L 60 \
+  -I $((60*60*24*365)) \
+  nevers.prac.os3.nl.
+dnssec-keygen: fatal: time value 31536000 is invalid: out of range
+</code>
+So the output was without -I.
+
+<code>
+Generating key pair.................++++++ ........................++++++ 
+Knevers.prac.os3.nl.+008+51934
+bash-4.4# cat Knevers.prac.os3.nl.+008+51934.key 
+; This is a key-signing key, keyid 51934, for nevers.prac.os3.nl.
+; Created: 20181012131435 (Fri Oct 12 13:14:35 2018)
+; Publish: 20181012131435 (Fri Oct 12 13:14:35 2018)
+; Activate: 20181012131435 (Fri Oct 12 13:14:35 2018)
+nevers.prac.os3.nl. 60 IN DNSKEY 257 3 8 AwEAAaSpowYZSEwg+WFwPZ7RV6w0aCYwLYHDwI+WlKDe5pDsH4MidrFg JiWNi63EFcPVTywKWoO6jWXqzS3I9rqTMkZN7Vj6ub9A5UydGcjk/XPD LlFbKvoFND2YktG94X1e2w8wc4eIilmKINkZgdEQ2w/G1xrsOg8Q2iRB xCfWd3Lh
+bash-4.4# cat Knevers.prac.os3.nl.+008+51934.private|grep -v =
+Private-key-format: v1.3
+Algorithm: 8 (RSASHA256)
+PublicExponent: AQAB
+Created: 20181012131435
+Publish: 20181012131435
+Activate: 20181012131435
+</code>
+
+We add the key to our zone:
+<code>
+echo '$INCLUDE '`ls K*.key` >> myprac.conf 
+</code>
+
+We do the same for the ZSK,
+but without the '-f KSK'
+<code>
+dnssec-keygen -a RSASHA256 -b 1024 \
+  -3 \
+  -L 60 \
+  nevers.prac.os3.nl.
+
+echo '$INCLUDE '`ls -tr K*.key|tail -1` >> myprac.conf 
+</code>
+
+
+<code>
+dnssec-signzone -A -t \
+  -o nevers.prac.os3.nl. \
+  myprac.conf
+
+Verifying the zone using the following algorithms: RSASHA256.
+Zone fully signed:
+Algorithm: RSASHA256: KSKs: 1 active, 0 stand-by, 0 revoked
+                      ZSKs: 1 active, 0 stand-by, 0 revoked
+myprac.conf.signed
+Signatures generated:                       20
+Signatures retained:                         0
+Signatures dropped:                          0
+Signatures successfully verified:            0
+Signatures unsuccessfully verified:          0
+Signing time in seconds:                 0.010
+Signatures per second:                1942.501
+Runtime in seconds:                      0.059
+
+ls -ltr|tail -2
+-rw-r--r--    1 root     root          7788 Oct 12 13:54 myprac.conf.signed
+-rw-r--r--    1 root     root           179 Oct 12 13:54 dsset-nevers.prac.os3.nl.
+
+bash-4.4# cat myprac.conf.signed 
+; File written on Fri Oct 12 13:54:33 2018
+; dnssec_signzone version 9.12.2-P1
+nevers.prac.os3.nl.     60      IN SOA  ns1.nevers.prac.os3.nl. sander.lent.ink. (
+                                        2018092502 ; serial
+                                        60         ; refresh (1 minute)
+                                        60         ; retry (1 minute)
+                                        60         ; expire (1 minute)
+                                        60         ; minimum (1 minute)
+                                        )
+                        60      RRSIG   SOA 8 4 60 (
+                                        20181111125433 20181012125433 37755 nevers.prac.os3.nl.
+                                        CqEk2lKEpjnd7DO6XUPIVv4Qgh6KC4tBAmTd
+                                        BMBxbVMfvAGhVvuncRtE9IuHqTNxWSq8PblC
+                                        3uVxZ+/37UdOWe/rfO+I/UPzQe3MWlYrD0NQ
+                                        +DOlxgkUmM8qcHqjz7MGSeNANT4BGDClFHc3
+                                        bnAXcFCk3Ikgb0w+XH9EcFw4UUQ= )
+                        60      NS      ns1.nevers.prac.os3.nl.
+                        60      NS      nevers.prac.os3.nl.
+                        60      RRSIG   NS 8 4 60 (
+                                        20181111125433 20181012125433 37755 nevers.prac.os3.nl.
+                                        g5NPthxXW0iaBl/7OhMI01u16LQYc5GkoLgx
+                                        YDydPEKnIRsWswRwHsXruobme/ISY/Bs55wU
+                                        VTRAbKyBrFyWNl2QQWDBHJunxyGvEehs0AdS
+                                        RuH+z7I9n0Yz5yc0ITkqM8YM2ngkS7miCea/
+                                        CMDzLq54HXJbbcGHlNCSiIWP5vU= )
+                        60      A       145.100.104.117
+                        60      RRSIG   A 8 4 60 (
+                                        20181111125433 20181012125433 37755 nevers.prac.os3.nl.
+                                        xdktS38dHpCyL7MOkK1sEIK74P7Mb4EeAruF
+                                        ZvE+XYcj8aA0d4/2yNSjau5KdS6M4e6UDD6V
+                                        QOExW+V5qogwU3LtDbzrFmc44uXc1Roz1uzJ
+                                        L3T/52Rv04/sp46uoYBCBIrXuxl5VGEm0+/F
+                                        RuKqzxitCeiPyiQJbk+Saq+ojGA= )
+                        60      MX      10 mailserver.nevers.prac.os3.nl.
+                        60      MX      11 secondary.nevers.prac.os3.nl.
+                        60      MX      30 hull.prac.os3.nl.
+                        60      MX      31 mail.hull.prac.os3.nl.
+                        60      RRSIG   MX 8 4 60 (
+                                        20181111125433 20181012125433 37755 nevers.prac.os3.nl.
+                                        vl4cTp2KnQxHD1Ygd86dtBF+C6UACoKbv2Io
+                                        U5Pw/+0mC6mJ756Tvv60Ur0CV3+/+vGJl1Vf
+                                        DXCJe5XvxqBY1FpUMHmBctriHV4UdUP/3T0o
+                                        SAAUJvc6rWFc9guUTGS0SsyGzoOgB4r4/7kh
+                                        vqfzuV0FCEzZgYqLdUVq9GGowAg= )
+. . .
+</code>
+What is the difference?
+Nicely structured,
+no comments and a signature after each record group.
+
+
+
 === Q13. Which DS record do you need to send to Niels and why that one? Once Niels has implemented your DS record use a DNSSEC debugger to examine the chain of trust see http //dnssec-debugger verisignlabs com/ (use more detail ) or http //dnsviz net/  ===
+
+Changed the config:
+<code>
+sed -i 's/myprac.conf/myprac.conf.signed/g' named.conf
+</code>
+
+Testing it:
+<code>
+dig nevers.prac.os3.nl. dnskey
+
+; <<>> DiG 9.10.3-P4-Ubuntu <<>> nevers.prac.os3.nl. dnskey
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 45734
+;;flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;nevers.prac.os3.nl.            IN      DNSKEY
+
+;; ANSWER SECTION:
+nevers.prac.os3.nl.     60      IN      DNSKEY  256 3 8 AwEAAdzMrtrYbvToum3dMg7Iq8x27xH+aT/eDDjby5/7NSR2Nm81u7LK wOWEJ/vtxpaK6lcv7pQMDWe/+mPXWi/PNHifX1M7YJfg9NMl1ZX0pzPQ TVuz2sMf2euF25vdAI1G5edszwPcyz/MNVA7jf9umSJ76h4P8Slf5kUL WlzyS+XV
+nevers.prac.os3.nl.     60      IN      DNSKEY  257 3 8 AwEAAaSpowYZSEwg+WFwPZ7RV6w0aCYwLYHDwI+WlKDe5pDsH4MidrFg JiWNi63EFcPVTywKWoO6jWXqzS3I9rqTMkZN7Vj6ub9A5UydGcjk/XPD LlFbKvoFND2YktG94X1e2w8wc4eIilmKINkZgdEQ2w/G1xrsOg8Q2iRB xCfWd3Lh
+
+;; Query time: 38 msec
+;; SERVER: 10.1.94.8#53(10.1.94.8)
+;; WHEN: Fri Oct 12 13:57:51 UTC 2018
+;; MSG SIZE  rcvd: 343
+</code>
+
+Record for my parent:
+<code>
+cat dsset-nevers.prac.os3.nl. 
+nevers.prac.os3.nl.     IN DS 51934 8 1 6E5CC2ED0F8302E186AB01F378BE02C170AF3740
+nevers.prac.os3.nl.     IN DS 51934 8 2 78FFC57A999994ED5C9DF070B2679034EBF44C5C5779051512A595D3 8BB82808
+</code>
+or:
+<code>
+dig @145.100.104.117 dnskey nevers.prac.os3.nl | dnssec-dsfromkey -f - nevers.prac.os3.nl
+nevers.prac.os3.nl. IN DS 51934 8 1 6E5CC2ED0F8302E186AB01F378BE02C170AF3740
+nevers.prac.os3.nl. IN DS 51934 8 2 78FFC57A999994ED5C9DF070B2679034EBF44C5C5779051512A595D38BB82808
+</code>
+
+This is the KSK, the one that has a longer lifespan,
+which is communicated to the parent.
+An alternative is to use the KSK for signing the zone (-z option),
+but seperating the ZSK and KSK is a good practice.
+
+"The idea behind this separation is that there are only a few signatures to validate that were made with a KSK,
+so it can have a higher security qualification than the ZSK.
+Having a longer KSK means less rollover of these keys,
+and thus less of the complicated interactions with the parent zone."
+[[https://blog.surf.nl/en/cryptographic-sanity-key-sizes/|src]]
+
+Since I wanted to finish my lab in the weekend
+and my DS record was not set,
+I wrote a
+[[https://github.com/svlentink/dockerfiles/blob/master/svlentink/dnssec/gen_dnssec.py|script]]
+to automate the process and used another domain at Namesilo,
+so I could insert the record myself at the registrar:
+<code>
+
+</code>
 
 === Q14. Show the results of the examination of your secured domain  ===
 
