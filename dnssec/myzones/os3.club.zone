@@ -9,7 +9,7 @@ $TTL 60
 @ IN NS os3.club.
 @ IN NS ns1.os3.club.
 @ IN NS ns2.os3.club.
-os3.nl. IN A 145.100.111.11
+os3.club. IN A 145.100.111.11
 ns1.os3.club. IN A 145.100.111.11
 ns2.os3.club. IN A 145.100.111.11
 www.os3.club. IN CNAME www.lent.ink.
