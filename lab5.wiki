@@ -524,12 +524,193 @@ I wrote a
 to automate the process and used another domain at Namesilo,
 so I could insert the record myself at the registrar:
 <code>
+root@nevers:~/bind/dnssec# ip a a 145.100.111.11 dev eno1
+root@nevers:~/bind/dnssec# cat myzones/os3.club.zone 
+$TTL 60
+@ IN SOA ns1.os3.club. sander.lent.ink. (
+    2018101401 ; Serial
+    60         ; Refresh
+    60         ; Retry
+    60         ; Expire
+    60 )       ; Negative Cache TTL
+
+@ IN NS os3.club.
+@ IN NS ns1.os3.club.
+@ IN NS ns2.os3.club.
+os3.club. IN A 145.100.111.11
+ns1.os3.club. IN A 145.100.111.11
+ns2.os3.club. IN A 145.100.111.11
+www.os3.club. IN CNAME www.lent.ink.
+root@nevers:~/bind/dnssec# cat docker-compose.yml 
+version: '3'
+services:
+  dns:
+    image: svlentink/dnssec
+    environment:
+      IPV4MASTER: 145.100.111.11
+      SERVERTYPE: master
+    volumes:
+      - $PWD/myzones:/zonefiles
+      - $PWD/dnskeys:/keys
+    ports:
+      - 145.100.111.11:53:53/tcp
+      - 145.100.111.11:53:53/udp
+root@nevers:~/bind/dnssec# docker-compose up -d
+Creating network "dnssec_default" with the default driver
+Pulling dns (svlentink/dnssec:latest)...
+latest: Pulling from svlentink/dnssec
+4fe2ade4980c: Already exists
+7cf6a1d62200: Pull complete
+b66090d9998c: Pull complete
+e0dc374a57ff: Pull complete
+eb580e903ff2: Pull complete
+f262fd436a9c: Pull complete
+870577acc9a6: Pull complete
+0f1446a347b3: Pull complete
+Digest: sha256:b8674342c94c44a372c64d435075c04087f322766c9d2972c5929651ba63e91b
+Status: Downloaded newer image for svlentink/dnssec:latest
+Creating dnssec_dns_1 ... 
+Creating dnssec_dns_1 ... done
+Attaching to dnssec_dns_1
+dns_1  | Kos3.club.+007+35148
+dns_1  | Kos3.club.+007+18188
+dns_1  | cd /keys; dnssec-keygen -n ZONE -a NSEC3RSASHA1 -L 600 -b 4096 -f KSK os3.club.
+dns_1  | cd /keys; dnssec-keygen -n ZONE -a NSEC3RSASHA1 -L 600 -b 2048 os3.club.
+dns_1  | You need to insert the DS records at your Domain registrar.
+dns_1  | from host: dig @127.0.0.1 dnskey example.com | dnssec-dsfromkey -f - example.com
+dns_1  | inside container: dnssec-dsfromkey -a SHA-( 1 | 256 ) /keys/Kexample.net.+008+50707.key
+root@nevers:~/bind/dnssec# tree
+.
+├── dnskeys
+│   ├── Kos3.club.+007+18188.key
+│   ├── Kos3.club.+007+18188.private
+│   ├── Kos3.club.+007+35148.key
+│   └── Kos3.club.+007+35148.private
+├── docker-compose.yml
+└── myzones
+    ├── os3.club.zone
+    ├── os3.club.zone.jbk
+    ├── os3.club.zone.signed
+    └── os3.club.zone.signed.jnl
+
+2 directories, 9 files
+root@nevers:~/bind/dnssec# dig @145.100.111.11 dnskey os3.club | dnssec-dsfromkey -f - os3.club
+os3.club. IN DS 35148 7 1 6ED7AD9EDC9AB06F50D2DE3870F9AD25CD649EF2
+os3.club. IN DS 35148 7 2 7507E5404A929511163BD46EA9A9276D6D6C40186B8C7B560A2080D4F8673672
+os3.club. IN DS 61716 7 1 A7765AAC98C0E3BD7D1C7113FF3D8FCA2C6BB14C
+os3.club. IN DS 61716 7 2 15D7D5099353627552A13F4634F777A3C649467212DDEAC16ADFE52D187AEA51
+root@nevers:~/bind/dnssec/dnskeys# head -1 Kos3.club.+007+35148.key 
+; This is a key-signing key, keyid 35148, for os3.club.
+</code>
+So we input the 35148 key into our domain registrars web portal.
+
+{{:2018-2019:students:sander_lentink:cia:webui.png?direct|}}
+
+And after about 15minutes we see:
+<code>
+sandermacbook:~ sanderlentink$ dig DS os3.club
+
+; <<>> DiG 9.10.6 <<>> DS os3.club
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 63771
+;; flags: qr rd ra; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 512
+;; QUESTION SECTION:
+;os3.club.			IN	DS
+
+;; AUTHORITY SECTION:
+club.			59	IN	SOA	ns1.dns.nic.club. hostmaster.neustar.biz. 1539532881 900 900 604800 60
+
+;; Query time: 20 msec
+;; SERVER: 8.8.8.8#53(8.8.8.8)
+;; WHEN: Sun Oct 14 18:23:59 CEST 2018
+;; MSG SIZE  rcvd: 107
+
+sandermacbook:~ sanderlentink$ dig DS os3.club
+
+; <<>> DiG 9.10.6 <<>> DS os3.club
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 23598
+;; flags: qr rd ra ad; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 512
+;; QUESTION SECTION:
+;os3.club.			IN	DS
+
+;; ANSWER SECTION:
+os3.club.		3599	IN	DS	35148 7 1 6ED7AD9EDC9AB06F50D2DE3870F9AD25CD649EF2
+os3.club.		3599	IN	DS	35148 7 2 7507E5404A929511163BD46EA9A9276D6D6C40186B8C7B560A2080D4 F8673672
 
 </code>
 
 === Q14. Show the results of the examination of your secured domain  ===
 
+{{:2018-2019:students:sander_lentink:cia:clubresult.png?direct|}}
+
+And just when I finished setting up this alternative setup,
+I got an email from Niels:
+{{:2018-2019:students:sander_lentink:cia:screenshot_2018-10-14_at_19.43.07.png?direct}}
+
+We see on the other tool that IPv6 is not reachable,
+which is correct, since I only listen on IPv4.
+But the DS records work!
+
 === Q15. Describe the DS and DNSKEY records from os3 nl down that are important for your domain Which keys are used to sign them?  ===
+
+<code>
+dig nevers.prac.os3.nl DNSKEY \
+  +dnssec +trace +multiline \
+  |grep 'DNSKEY\|DS\|RRSIG'
+; <<>> DiG 9.10.6 <<>> nevers.prac.os3.nl DNSKEY +dnssec +trace +multiline
+.			231016 IN RRSIG	NS 8 0 518400 (
+nl.			86400 IN DS 34112 8 2 (
+nl.			86400 IN RRSIG DS 8 1 86400 (
+os3.nl.			3600 IN	DS 64426 5 2 (
+os3.nl.			3600 IN	RRSIG DS 8 2 3600 (
+nevers.prac.os3.nl.	21600 IN DS 51934 8 2 (
+nevers.prac.os3.nl.	21600 IN DS 51934 8 1 (
+nevers.prac.os3.nl.	21600 IN RRSIG DS 5 4 21600 (
+nevers.prac.os3.nl.	60 IN DNSKEY 257 3 8 (
+nevers.prac.os3.nl.	60 IN DNSKEY 256 3 8 (
+nevers.prac.os3.nl.	60 IN RRSIG DNSKEY 8 4 60 (
+nevers.prac.os3.nl.	60 IN RRSIG DNSKEY 8 4 60 (
+
+dig os3.nl DNSKEY \
+  +dnssec +trace +multiline \
+  |grep 'DNSKEY\|DS\|RRSIG'
+; <<>> DiG 9.10.6 <<>> os3.nl DNSKEY +dnssec +trace +multiline
+.			49322 IN RRSIG NS 8 0 518400 (
+nl.			86400 IN DS 34112 8 2 (
+nl.			86400 IN RRSIG DS 8 1 86400 (
+os3.nl.			3600 IN	DS 64426 5 2 (
+os3.nl.			3600 IN	RRSIG DS 8 2 3600 (
+os3.nl.			21600 IN DNSKEY	257 3 5 (
+os3.nl.			21600 IN DNSKEY	256 3 5 (
+os3.nl.			21600 IN RRSIG DNSKEY 5 2 21600 (
+os3.nl.			21600 IN RRSIG DNSKEY 5 2 21600 (
+
+</code>
+
+We first note that . delegates nl,
+nl delegates os3 and
+os3 delegates nevers.prac,
+there is no delegation in between.
+
+In the snipet above, we see the two DNSKEYs of os3.nl, the KSK and ZSK.
+As we saw from the ls command above, we have the K*.key (pub) en the K*.private key pairs.
+The DNSKEYs are the public keys. The parent stores a hash of the KSK key as DS record.
+
+For every level of delegation,
+we have a DS record at the parent,
+which is a hash of the KSK of the subject.
+This subject has a ZSK which it uses to sign its zone,
+and the ZSK is signed by the KSK.
+This forms a chain in DNSSEC.
 
 === Q16. Start planning for a Zone Signing Key rollover  ===
 == a. Describe the options for doing a ZSK rollover make a motivated choice for one procedure  == 

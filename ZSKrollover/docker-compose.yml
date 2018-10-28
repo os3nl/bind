@@ -1,0 +1,11 @@
+version: '3'
+services:
+  primary:
+    image: bind
+    ports:
+      - 145.100.104.117:53:53/tcp
+      - 145.100.104.117:53:53/udp
+    volumes:
+      - $PWD/keys:/keys
+      - $PWD/zone.conf:/etc/bind/myzone.conf:ro
+      - $PWD/named.conf:/etc/bind/named.conf:ro
