@@ -7,5 +7,5 @@ services:
       - 145.100.104.117:53:53/udp
     volumes:
       - $PWD/keys:/keys
-      - $PWD/zone.conf:/etc/bind/myzone.conf:ro
-      - $PWD/named.conf:/etc/bind/named.conf:ro
+      - $PWD/zone.conf:/usr/local/etc/bind/myzone.conf:ro
+      - $PWD/named.conf:/etc/named.conf:ro
